@@ -75,7 +75,6 @@
       <p>{{ cheapestLocation.address.line1 }} - ${{ cheapestPrice }}</p>
     </div>
   </div>
-a
   <div *ngFor="let category of getCategoryKeys()">
     <h3 class="mt-2 category-header" (click)="toggleCategory(category)">
       <i class="fas" [ngClass]="{
