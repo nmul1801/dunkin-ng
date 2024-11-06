@@ -27,6 +27,7 @@ export class AppComponent implements OnInit {
   errorMessage: string | null = null;
   cheapestLocation: Store | null = null;
   fetchingLocation: boolean = false;
+  blockLocation: boolean = false;
   fetchingMenu: boolean = false;
   processingMenu: boolean = false;
   findingCheapest: boolean = false;
@@ -34,10 +35,12 @@ export class AppComponent implements OnInit {
   map!: L.Map;
   circle: L.Circle | null = null;
   categoryMenuItems: { [category: string]: MenuItem[] } = {};
+  googleMapsLink: string = "#";
 
   constructor(private dunkinService: DunkinService) {}
 
   ngOnInit() {
+
     this.getCurrentLocation();
   }
 
@@ -70,6 +73,7 @@ export class AppComponent implements OnInit {
 
   getCurrentLocation() {
     this.fetchingLocation = true;
+    console.log('about to fetch location');
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -89,11 +93,14 @@ export class AppComponent implements OnInit {
         (error) => {
           this.errorMessage = 'Unable to retrieve location. Please enter manually.';
           this.fetchingLocation = false;
+          this.blockLocation = true;
         }
       );
     } else {
       console.log('Geolocation is not supported by this browser.');
       this.errorMessage = 'Geolocation is not supported by this browser.';
+      this.blockLocation = true;
+      
       this.fetchingLocation = false;
     }
   }
@@ -136,6 +143,12 @@ export class AppComponent implements OnInit {
     }
   }
 
+  generateGoogleMapsLink(address: string) {
+    const encodedAddress = encodeURIComponent(address);
+    this.googleMapsLink = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+  }
+
+  
   onItemSelect() {
     if (this.selectedItem) {
         this.findingCheapest = true;
@@ -147,6 +160,7 @@ export class AppComponent implements OnInit {
               if (foundItem && foundItem.price < this.cheapestPrice) {
                   this.cheapestLocation = store.store;
                   this.cheapestPrice = foundItem.price;
+                  this.generateGoogleMapsLink(this.cheapestLocation.address);
               }
           }
         });
@@ -178,7 +192,7 @@ export class AppComponent implements OnInit {
 
   scrollToCheapestDisplay() {
     if (this.cheapestDisplay) {
-        const elementPosition = this.cheapestDisplay.nativeElement.getBoundingClientRect().top + window.scrollY;
+        const elementPosition = this.cheapestDisplay.nativeElement.getBoundingClientRect().bottom + window.scrollY;
         const windowHeight = window.innerHeight;
         const targetPosition = elementPosition - windowHeight;
 

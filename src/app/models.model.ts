@@ -1,12 +1,7 @@
 export interface Store {
     storeID: number;
     distance: number;
-    address: {
-        line1: string,
-        city: string,
-        state: string
-        postalCode: number;
-    }
+    address: string;
     city: string;
     state: string;
     postalCode: number;
