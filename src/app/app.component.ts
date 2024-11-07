@@ -168,8 +168,6 @@ export class AppComponent implements OnInit {
         this.scrollToCheapestDisplay();
     }
   }
-
-
   categoryVisibility: { [key: string]: boolean } = {};
 
   toggleCategory(category: string) {
@@ -192,13 +190,8 @@ export class AppComponent implements OnInit {
 
   scrollToCheapestDisplay() {
     if (this.cheapestDisplay) {
-        const elementPosition = this.cheapestDisplay.nativeElement.getBoundingClientRect().bottom + window.scrollY;
-        const windowHeight = window.innerHeight;
-        const targetPosition = elementPosition - windowHeight;
-
-        window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+      const elementPosition = this.cheapestDisplay.nativeElement.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo({ top: elementPosition, behavior: 'smooth' });
     }
   }
-
-  
 }
