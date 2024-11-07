@@ -33,6 +33,7 @@ export class AppComponent implements OnInit {
   findingCheapest: boolean = false;
   imagePath: string = 'assets/leaflet/';
   map!: L.Map;
+  locationMarker: L.Marker | null = null;
   circle: L.Circle | null = null;
   categoryMenuItems: { [category: string]: MenuItem[] } = {};
   googleMapsLink: string = "#";
@@ -44,22 +45,23 @@ export class AppComponent implements OnInit {
     this.getCurrentLocation();
   }
 
+  updateCirclePosition() {
+    // Re-create the circle based on the new location
+    if (this.circle) {
+      this.circle.setLatLng([this.lat, this.long]);
+    }
+  }
+
   generateCircle() {
     if (this.circle) {
       this.map.removeLayer(this.circle);
     }
 
     if (this.map) {
+      // Initialize map tiles
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       }).addTo(this.map);
-
-      // Set default options for Leaflet icons
-      L.Icon.Default.mergeOptions({
-        iconUrl: 'assets/leaflet/marker-icon.png',
-        iconRetinaUrl: 'assets/leaflet/marker-icon-2x.png',
-        shadowUrl: 'assets/leaflet/marker-shadow.png'
-      });
 
       // Add a radius circle based on user input
       this.circle = L.circle([this.lat, this.long], {
@@ -68,12 +70,44 @@ export class AppComponent implements OnInit {
         fillOpacity: 0.5,
         radius: this.dist * 1609.34 // conversion from miles to meters
       }).addTo(this.map);
+
+      const defaultIcon = L.icon({
+        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+      });
+      
+      L.Marker.prototype.options.icon = defaultIcon;
+
+      // Add click event listener for dropping a pin
+      this.map.on('click', (event: L.LeafletMouseEvent) => {
+        const { lat, lng } = event.latlng;
+
+        // Update lat and long with the clicked coordinates
+        this.lat = lat;
+        this.long = lng;
+
+        // If a marker exists, remove it
+        if (this.locationMarker) {
+          this.map.removeLayer(this.locationMarker);
+        }
+
+        // Add a new marker to indicate the selected location
+        this.locationMarker = L.marker([lat, lng], {
+          draggable: true, // Make the marker draggable if desired
+        }).addTo(this.map);
+
+        // Re-center the circle if needed
+        this.updateCirclePosition();
+      });
     }
   }
 
   getCurrentLocation() {
     this.fetchingLocation = true;
-    console.log('about to fetch location');
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -87,22 +121,55 @@ export class AppComponent implements OnInit {
             zoom: 13
           });
 
-          // Generate the map once it's initialized
-          this.generateCircle();
+          // Wait until the map is fully loaded before generating the circle
+
+          // Load the tiles for the map
+          const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          }).addTo(this.map);
+
+          tileLayer.on('load', () => {
+            console.log('Map tiles fully loaded');
+            this.generateCircle();
+          });
         },
         (error) => {
-          this.errorMessage = 'Unable to retrieve location. Please enter manually.';
           this.fetchingLocation = false;
           this.blockLocation = true;
+
+          // Initialize the map with fallback coordinates
+          this.initializeMapWithFallback();
         }
       );
     } else {
-      console.log('Geolocation is not supported by this browser.');
       this.errorMessage = 'Geolocation is not supported by this browser.';
       this.blockLocation = true;
-      
       this.fetchingLocation = false;
+
+      // Initialize the map with fallback coordinates
+      this.initializeMapWithFallback();
     }
+  }
+
+  initializeMapWithFallback() {
+    // park street!
+    this.lat = 42.35658;
+    this.long = -71.06220;
+
+    this.map = L.map('map', {
+      center: [this.lat, this.long],
+      zoom: 13
+    });
+
+    // Generate the map and add the circle
+    const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(this.map);
+
+    tileLayer.on('load', () => {
+      console.log('Map tiles fully loaded');
+      this.generateCircle();
+    });
   }
 
   fetchMenuItems() {
