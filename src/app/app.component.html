@@ -7,6 +7,8 @@
   </div>
 
   <div *ngIf="!blockLocation">
+    <p>This was inspired by work from Reddit user <a href="https://www.reddit.com/user/gerunk/">gerunk</a> in his DunkinScout project</p>
+    <p>Check out the original <a href="https://github.com/jack898/dunkinScout">repo</a></p>
     <form (submit)="fetchMenuItems(); $event.preventDefault()">
   
       <ng-template #loading_location>
